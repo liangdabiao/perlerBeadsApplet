@@ -138,16 +138,30 @@ const currentGridSize = ref(props.gridSize)
 const currentTool = ref('brush')
 const showColorSetPanel = ref(false)
 const currentColorSetId = ref('default')
+const activeColorPalette = ref<string[]>([])
 
-const colorRow1 = [
+const defaultColors = [
   '#C4634E', '#7A9B76', '#F5D547', '#5B8DB8', '#9B7CB6',
-  '#2D2A26', '#FF6B6B', '#95E1A8', '#74C0FC'
-]
-
-const colorRow2 = [
+  '#2D2A26', '#FF6B6B', '#95E1A8', '#74C0FC',
   '#FFFFFF', '#E8913A', '#E87A9A', '#5BB8A8', '#8B6F5C',
   '#9A9A9A', '#6B4C7A', '#F5E6D3', '#87CEEB'
 ]
+
+const colorRow1 = computed(() => {
+  return activeColorPalette.value.slice(0, 9).length > 0
+    ? activeColorPalette.value.slice(0, 9)
+    : defaultColors.slice(0, 9)
+})
+
+const colorRow2 = computed(() => {
+  return activeColorPalette.value.slice(9, 18).length > 0
+    ? activeColorPalette.value.slice(9, 18)
+    : defaultColors.slice(9, 18)
+})
+
+const updateColorPalette = (colors: string[]) => {
+  activeColorPalette.value = colors
+}
 
 const gridSizes = [16, 24, 32, 48, 100]
 
@@ -156,7 +170,7 @@ const colorSets: ColorSet[] = [
     id: 'default',
     name: '默认颜色集',
     description: '常用的基础颜色',
-    colors: [...colorRow1, ...colorRow2]
+    colors: [...defaultColors]
   },
   {
     id: 'warm',
@@ -215,12 +229,12 @@ const showColorPicker = computed(() => {
 })
 
 const handleColorSelect = (color: string) => {
-  // currentColor.value = color
-  // emit('update:modelValue', color)
-  // if (currentTool.value === 'eraser') {
-  //   currentTool.value = 'brush'
-  //   emit('toolChange', 'brush')
-  // }
+  currentColor.value = color
+  emit('update:modelValue', color)
+  if (currentTool.value === 'eraser') {
+    currentTool.value = 'brush'
+    emit('toolChange', 'brush')
+  }
 }
 
 const handleGridSizeChange = (size: number) => {
@@ -246,6 +260,7 @@ const handleCloseColorSetPanel = () => {
 const handleColorSetSelect = (colorSet: ColorSet) => {
   currentColorSetId.value = colorSet.id
   showColorSetPanel.value = false
+  updateColorPalette(colorSet.colors)
 
   emit('canvasVisibleChange', true)
   emit('colorSetChange', colorSet.colors)
