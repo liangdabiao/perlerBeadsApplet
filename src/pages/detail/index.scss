@@ -1,0 +1,134 @@
+@import '@/styles/variables.scss';
+
+.detail-page {
+  min-height: 100vh;
+  background-color: $background-color;
+  padding-bottom: $tab-bar-height;
+}
+
+.canvas-container {
+  background-color: $background-color-white;
+  padding: $spacing-lg 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.info-section {
+  background-color: $background-color-white;
+  border-radius: $border-radius-xl $border-radius-xl 0 0;
+  margin-top: -$spacing-base;
+  padding: $spacing-lg $spacing-base;
+  box-shadow: $shadow-base;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-base;
+}
+
+.title {
+  font-size: $font-size-xl;
+  font-weight: 600;
+  color: $text-color-primary;
+  flex: 1;
+  margin-right: $spacing-sm;
+}
+
+.status-badge {
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-base;
+  font-size: $font-size-xs;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.finished {
+    background-color: rgba($success-color, 0.1);
+    color: $success-color;
+  }
+
+  &.unfinished {
+    background-color: rgba($warning-color, 0.1);
+    color: $warning-color;
+  }
+}
+
+.description {
+  margin-bottom: $spacing-base;
+  padding: $spacing-base;
+  background-color: $background-color;
+  border-radius: $border-radius-base;
+}
+
+.description-text {
+  font-size: $font-size-base;
+  color: $text-color-secondary;
+  line-height: 1.6;
+}
+
+.tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-base;
+}
+
+.tag {
+  padding: $spacing-xs $spacing-base;
+  background-color: rgba($primary-color, 0.1);
+  border-radius: $border-radius-lg;
+}
+
+.tag-text {
+  font-size: $font-size-xs;
+  color: $primary-color;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-base 0;
+  border-top: 1px solid $border-color;
+  margin-bottom: $spacing-lg;
+}
+
+.meta-text {
+  font-size: $font-size-sm;
+  color: $text-color-placeholder;
+}
+
+.action-buttons {
+  display: flex;
+  gap: $spacing-base;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-base;
+  background-color: $background-color;
+  border-radius: $border-radius-lg;
+  transition: all 0.3s ease;
+
+  &:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+}
+
+.btn-icon {
+  font-size: $font-size-xl;
+  margin-bottom: $spacing-xs;
+  color: $primary-color;
+}
+
+.btn-text {
+  font-size: $font-size-sm;
+  color: $text-color-secondary;
+}

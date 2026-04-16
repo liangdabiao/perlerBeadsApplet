@@ -1,0 +1,187 @@
+@use '../../styles/variables.scss' as *;
+
+.debug-page {
+  min-height: 100vh;
+  background-color: $background-color;
+  padding: $spacing-base;
+}
+
+.debug-header {
+  padding: $spacing-base 0;
+  margin-bottom: $spacing-base;
+  
+  .title {
+    display: block;
+    font-size: 40px;
+    font-weight: bold;
+    color: $text-color-primary;
+  }
+  
+  .subtitle {
+    display: block;
+    font-size: $font-size-sm;
+    color: $text-color-secondary;
+    margin-top: $spacing-xs;
+  }
+}
+
+.debug-section {
+  background-color: $background-color-white;
+  border-radius: $border-radius-lg;
+  margin-bottom: $spacing-base;
+  overflow: hidden;
+}
+
+.section-title {
+  padding: $spacing-sm $spacing-base;
+  background-color: rgba($primary-color, 0.05);
+  border-bottom: 1px solid $border-color;
+  
+  text {
+    font-size: $font-size-sm;
+    color: $primary-color;
+    font-weight: 600;
+  }
+}
+
+.debug-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-base;
+  border-bottom: 1px solid $border-color;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  &:active {
+    background-color: $background-color-gray;
+  }
+}
+
+.item-label {
+  font-size: $font-size-base;
+  color: $text-color-primary;
+}
+
+.arrow {
+  font-size: 40px;
+  color: #999;
+  line-height: 1;
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  padding: $spacing-base;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 26px;
+  color: #fff;
+  
+  &.btn-primary {
+    background-color: $primary-color;
+  }
+  
+  &.btn-info {
+    background-color: #1890ff;
+  }
+  
+  &.btn-warning {
+    background-color: #faad14;
+  }
+  
+  &.btn-danger {
+    background-color: #ff4d4f;
+  }
+  
+  &.btn-default {
+    background-color: #d9d9d9;
+    color: #333;
+  }
+  
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.log-container {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: $spacing-sm;
+  background-color: #1a1a1a;
+  margin: $spacing-base;
+  border-radius: $border-radius-base;
+}
+
+.log-item {
+  padding: $spacing-xs 0;
+  border-bottom: 1px solid #333;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.log-time {
+  font-size: 20px;
+  color: #888;
+  margin-right: $spacing-xs;
+}
+
+.log-content {
+  font-size: 24px;
+  color: #0f0;
+  word-break: break-all;
+}
+
+.log-empty {
+  padding: $spacing-base;
+  text-align: center;
+  
+  text {
+    color: #666;
+    font-size: $font-size-sm;
+  }
+}
+
+.data-editor-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: $background-color-white;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.popup-close {
+  display: flex;
+  align-items: center;
+  padding: $spacing-base;
+  background-color: $background-color-white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  
+  text {
+    font-size: $font-size-base;
+    color: $text-color-primary;
+    margin-left: $spacing-xs;
+  }
+}
+
+.arrow-left {
+  font-size: 32px;
+  color: #333;
+  line-height: 1;
+}

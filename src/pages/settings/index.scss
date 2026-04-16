@@ -1,0 +1,57 @@
+@use '../../styles/variables.scss' as *;
+
+.settings-page {
+  min-height: 100vh;
+  background-color: $background-color;
+}
+
+.menu-section {
+  margin-top: $spacing-base;
+  background-color: $background-color-white;
+  
+  .menu-item {
+    display: flex;
+    align-items: center;
+    padding: $spacing-base;
+    border-bottom: 1px solid $border-color-light;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    &:active {
+      background-color: $background-color;
+    }
+    
+    .menu-icon {
+      margin-right: $spacing-base;
+    }
+    
+    .menu-text {
+      flex: 1;
+      font-size: $font-size-base;
+      color: $text-color-primary;
+    }
+    
+    .menu-extra {
+      font-size: $font-size-sm;
+      color: $text-color-placeholder;
+      margin-right: $spacing-xs;
+    }
+    
+    .menu-arrow {
+      margin-left: $spacing-sm;
+    }
+  }
+}
+
+.version-info {
+  text-align: center;
+  padding: $spacing-lg;
+  margin-top: $spacing-lg;
+  
+  .version-text {
+    font-size: $font-size-sm;
+    color: $text-color-placeholder;
+  }
+}

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>高性能像素绘画编辑器 - 无断点</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: #f9f9f9;
+    }
+    .controls {
+      padding: 12px;
+      background: white;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #ddd;
+    }
+    .controls label {
+      font-size: 14px;
+    }
+    .controls input[type="number"] {
+      width: 60px;
+      padding: 4px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .controls input[type="color"] {
+      width: 40px;
+      height: 32px;
+      border: none;
+      cursor: pointer;
+    }
+    .controls button {
+      padding: 6px 12px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .controls button.clear {
+      background: #f44336;
+    }
+    canvas {
+      display: block;
+      margin: auto;
+      background: white;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      max-width: 95vw;
+      max-height: 85vh;
+    }
+  </style>
+</head>
+<body>
+
+<div class="controls">
+  <label>列数（宽度）:</label>
+  <input type="number" id="colsInput" min="1" max="500" value="64" />
+  
+  <label>行数（高度）:</label>
+  <input type="number" id="rowsInput" min="1" max="500" value="64" />
+
+  <label>颜色:</label>
+  <input type="color" id="colorPicker" value="#000000" />
+
+  <button id="applyBtn">应用尺寸</button>
+  <button class="clear" id="clearBtn">清空</button>
+  <label><input type="checkbox" id="showGrid" checked /> 显示网格</label>
+</div>
+
+<canvas id="pixelCanvas"></canvas>
+
+<script>
+  let cols = 64;
+  let rows = 64;
+  let pixelColor = '#000000';
+  let showGrid = true;
+
+  const canvas = document.getElementById('pixelCanvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: false });
+
+  let pixels = [];
+  let cellSize = 10;
+
+  // 上一次绘制的格子坐标（用于连线）
+  let lastCol = -1;
+  let lastRow = -1;
+
+  function initPixels() {
+    pixels = Array(rows).fill(null).map(() => Array(cols).fill('#ffffff'));
+  }
+
+  function resizeCanvas() {
+    const maxWidth = Math.min(window.innerWidth * 0.95, 2000);
+    const maxHeight = Math.min(window.innerHeight * 0.85, 2000);
+
+    cellSize = Math.floor(Math.min(maxWidth / cols, maxHeight / rows));
+    if (cellSize < 1) cellSize = 1;
+
+    canvas.width = cols * cellSize;
+    canvas.height = rows * cellSize;
+
+    redrawAll();
+  }
+
+  function redrawAll() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        drawCell(x, y, pixels[y][x]);
+      }
+    }
+  }
+
+  function drawCell(x, y, color) {
+    const sx = x * cellSize;
+    const sy = y * cellSize;
+
+    ctx.fillStyle = color;
+    ctx.fillRect(sx, sy, cellSize, cellSize);
+
+    if (showGrid && cellSize >= 2) {
+      ctx.strokeStyle = '#ddd';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(sx, sy, cellSize, cellSize);
+    }
+  }
+
+  // 核心：设置单个像素（带去重）
+  function setPixel(col, row, color) {
+    if (col < 0 || col >= cols || row < 0 || row >= rows) return;
+    if (pixels[row][col] === color) return;
+    pixels[row][col] = color;
+    drawCell(col, row, color);
+  }
+
+  // 使用直线插值填充两点之间的所有格子
+  function fillLine(fromCol, fromRow, toCol, toRow, color) {
+    const dx = Math.abs(toCol - fromCol);
+    const dy = Math.abs(toRow - fromRow);
+    const sx = fromCol < toCol ? 1 : -1;
+    const sy = fromRow < toRow ? 1 : -1;
+    let err = dx - dy;
+    let x = fromCol;
+    let y = fromRow;
+
+    while (true) {
+      setPixel(x, y, color);
+      if (x === toCol && y === toRow) break;
+      const e2 = err * 2;
+      if (e2 > -dy) {
+        err -= dy;
+        x += sx;
+      }
+      if (e2 < dx) {
+        err += dx;
+        y += sy;
+      }
+    }
+  }
+
+  function fillPixelAt(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    const col = Math.floor(x / cellSize);
+    const row = Math.floor(y / cellSize);
+
+    if (lastCol === -1 || lastRow === -1) {
+      // 第一次点击
+      setPixel(col, row, pixelColor);
+    } else {
+      // 连线填充
+      fillLine(lastCol, lastRow, col, row, pixelColor);
+    }
+
+    lastCol = col;
+    lastRow = row;
+  }
+
+  // ===== 初始化 =====
+  initPixels();
+  resizeCanvas();
+
+  // ===== 事件绑定 =====
+  document.getElementById('colorPicker').addEventListener('input', (e) => {
+    pixelColor = e.target.value;
+  });
+
+  document.getElementById('showGrid').addEventListener('change', (e) => {
+    showGrid = e.target.checked;
+    redrawAll();
+  });
+
+  document.getElementById('applyBtn').addEventListener('click', () => {
+    const newCols = parseInt(document.getElementById('colsInput').value) || 64;
+    const newRows = parseInt(document.getElementById('rowsInput').value) || 64;
+
+    if (newCols < 1 || newCols > 500 || newRows < 1 || newRows > 500) {
+      alert('行列数应在 1~500 之间');
+      return;
+    }
+
+    cols = newCols;
+    rows = newRows;
+    initPixels();
+    resizeCanvas();
+    lastCol = -1;
+    lastRow = -1;
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    initPixels();
+    redrawAll();
+    lastCol = -1;
+    lastRow = -1;
+  });
+
+  // 鼠标交互
+  let isDrawing = false;
+
+  canvas.addEventListener('mousedown', (e) => {
+    isDrawing = true;
+    lastCol = -1;
+    lastRow = -1;
+    fillPixelAt(e.clientX, e.clientY);
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (isDrawing) {
+      fillPixelAt(e.clientX, e.clientY);
+    }
+  });
+
+  const stopDrawing = () => {
+    isDrawing = false;
+    lastCol = -1;
+    lastRow = -1;
+  };
+  canvas.addEventListener('mouseup', stopDrawing);
+  canvas.addEventListener('mouseleave', stopDrawing);
+
+  window.addEventListener('resize', () => {
+    const oldPixels = pixels;
+    initPixels();
+
+    const minCols = Math.min(cols, oldPixels[0]?.length || 0);
+    const minRows = Math.min(rows, oldPixels.length);
+    for (let y = 0; y < minRows; y++) {
+      for (let x = 0; x < minCols; x++) {
+        pixels[y][x] = oldPixels[y][x];
+      }
+    }
+
+    resizeCanvas();
+    lastCol = -1;
+    lastRow = -1;
+  });
+</script>
+
+</body>
+</html>

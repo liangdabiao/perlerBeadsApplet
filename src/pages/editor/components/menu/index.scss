@@ -1,0 +1,49 @@
+@use '../../../../styles/variables.scss' as *;
+
+.menu-bar {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: $spacing-sm $spacing-md;
+  background-color: $background-color-white;
+  border-bottom: 2px solid rgba($border-color-dark, 0.2);
+  gap: 22px;
+}
+
+.menu-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 65px;
+  height: 65px;
+  border-radius: $border-radius-base;
+  background-color: $background-color-gray;
+  
+  &:active {
+    opacity: 0.8;
+    transform: scale(0.95);
+  }
+  
+  &.primary {
+    background-color: $primary-color;
+  }
+  
+  &.danger {
+    background-color: $background-color-gray;
+  }
+}
+
+.menu-label {
+  font-size: 16px;
+  font-weight: 500;
+  color: $text-color-secondary;
+  letter-spacing: 0.3px;
+  text-align: center;
+}

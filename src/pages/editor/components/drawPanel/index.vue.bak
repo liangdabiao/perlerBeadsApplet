@@ -1,0 +1,236 @@
+<template>
+  <view class="drawpanel-container">
+    <canvas 
+      canvasId="canvas" 
+      id="canvas" 
+      class="canvas"
+      :style="{ width: CANVAS_WIDTH + 'px', height: CANVAS_HEIGHT + 'px' }"
+      @touchstart="handleTouchStart"
+      @touchmove="handleTouchMove"
+      @touchend="handleTouchEnd"
+    />
+  </view>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import Taro from '@tarojs/taro'
+import { sleep } from '@/utils/tools'
+import './index.scss'
+
+interface BeadData {
+  x: number
+  y: number
+  color: string
+}
+
+const emit = defineEmits<{
+  loaded: []
+}>()
+
+const GRID_SIZE = 20
+const BEAD_SIZE = 15
+const TABBAR_HEIGHT = 100
+const TOOLS_SECTION_HEIGHT = 200
+const systemInfo = Taro.getSystemInfoSync()
+const CANVAS_WIDTH = systemInfo.windowWidth
+const CANVAS_HEIGHT = systemInfo.windowHeight - TABBAR_HEIGHT - TOOLS_SECTION_HEIGHT
+const GRID_COUNT_X = Math.floor(CANVAS_WIDTH / GRID_SIZE)
+const GRID_COUNT_Y = Math.floor(CANVAS_HEIGHT / GRID_SIZE)
+
+const ctx = ref<Taro.CanvasContext | CanvasRenderingContext2D | null>(null)
+const gridData = ref<Record<string, string>>({})
+const currentColor = ref('#FF6B6B')
+const isDrawing = ref(false)
+const isEraser = ref(false)
+const lastDrawTime = ref(0)
+const THROTTLE_DELAY = 16
+const rafId = ref<number | null>(null)
+const pendingRedraw = ref(false)
+console.log('新版本加载11111111111111111111');
+
+const COLORS = [
+  '#FF6B6B', '#FF8E8E', '#FF4D4F', '#E85555',
+  '#4ECDC4', '#6ED9D2', '#3DBDB4', '#2BA69E',
+  '#FFE66D', '#FFD93D', '#F4C430', '#E6B800',
+  '#95E1D3', '#B8F0E7', '#7DD3C0', '#5CB8A8',
+  '#F38181', '#F9A8A8', '#E85A5A', '#D94545',
+  '#AA96DA', '#C4B5E8', '#9585D1', '#7B6BC3',
+  '#FCBAD3', '#FDCDD9', '#F8A0C0', '#F685AA',
+  '#A8D8EA', '#C0E5F2', '#8CCDE9', '#74C2E0',
+  '#333333', '#666666', '#999999', '#CCCCCC',
+  '#FFFFFF', '#F5F5F5', '#E8E8E8', '#DDDDDD'
+]
+
+function drawGrid() {
+  if (!ctx.value) return
+  
+  if (rafId.value !== null) {
+    pendingRedraw.value = true
+    return
+  }
+  
+  rafId.value = requestAnimationFrame(() => {
+    ctx.value.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    
+    ctx.value.setStrokeStyle('#E0E0E0')
+    ctx.value.setLineWidth(1)
+    
+    for (let i = 0; i <= GRID_COUNT_X; i++) {
+      const pos = i * GRID_SIZE
+      ctx.value.moveTo(pos, 0)
+      ctx.value.lineTo(pos, CANVAS_HEIGHT)
+    }
+    
+    for (let i = 0; i <= GRID_COUNT_Y; i++) {
+      const pos = i * GRID_SIZE
+      ctx.value.moveTo(0, pos)
+      ctx.value.lineTo(CANVAS_WIDTH, pos)
+    }
+    
+    ctx.value.stroke()
+    
+    Object.entries(gridData.value).forEach(([key, color]) => {
+      const [x, y] = key.split(',').map(Number)
+      drawBead(x, y, color)
+    })
+    
+    ctx.value.draw()
+    rafId.value = null
+    
+    if (pendingRedraw.value) {
+      pendingRedraw.value = false
+      drawGrid()
+    }
+  })
+}
+
+function drawBead(gridX: number, gridY: number, color: string) {
+  if (!ctx.value) return
+  
+  const x = gridX * GRID_SIZE
+  const y = gridY * GRID_SIZE
+  
+  ctx.value.setFillStyle(color)
+  ctx.value.fillRect(x, y, GRID_SIZE, GRID_SIZE)
+}
+
+function handleTouchStart(e: any) {
+  isDrawing.value = true
+  handleDraw(e)
+}
+
+function handleTouchMove(e: any) {
+  if (isDrawing.value) {
+    const now = Date.now()
+    if (now - lastDrawTime.value >= THROTTLE_DELAY) {
+      handleDraw(e)
+      lastDrawTime.value = now
+    }
+  }
+}
+
+function handleTouchEnd() {
+  isDrawing.value = false
+}
+
+function handleDraw(e: any) {
+  if (!ctx.value) return
+  
+  const touch = e.touches[0]
+  const query = Taro.createSelectorQuery()
+  query.select('#canvas').boundingClientRect()
+  query.exec((res) => {
+    if (res && res[0]) {
+      const rect = res[0]
+      const x = touch.clientX - rect.left
+      const y = touch.clientY - rect.top
+      
+      const gridX = Math.floor(x / GRID_SIZE)
+      const gridY = Math.floor(y / GRID_SIZE)
+      
+      if (gridX >= 0 && gridX < GRID_COUNT_X && gridY >= 0 && gridY < GRID_COUNT_Y) {
+        const key = `${gridX},${gridY}`
+        
+        if (isEraser.value) {
+          delete gridData.value[key]
+        } else {
+          gridData.value[key] = currentColor.value
+        }
+        
+        drawGrid()
+      }
+    }
+  })
+}
+
+function setCurrentColor(color: string) {
+  currentColor.value = color
+  isEraser.value = false
+}
+
+function setEraser() {
+  isEraser.value = true
+}
+
+function clearCanvas() {
+  gridData.value = {}
+  drawGrid()
+}
+
+function exportData() {
+  return {
+    gridSize: GRID_SIZE,
+    beadSize: BEAD_SIZE,
+    canvasWidth: CANVAS_WIDTH,
+    canvasHeight: CANVAS_HEIGHT,
+    gridCountX: GRID_COUNT_X,
+    gridCountY: GRID_COUNT_Y,
+    gridData: gridData.value
+  }
+}
+
+function loadData(data: any) {
+  if (data && data.gridData) {
+    gridData.value = data.gridData
+    drawGrid()
+  }
+}
+
+async function getCanvasContext() {
+  while (true) {
+    await sleep(300)
+    
+    const query = Taro.createSelectorQuery()
+    query.select('#canvas').boundingClientRect()
+    console.log('等待中', query);
+    query.exec((res) => {
+      if (res && res[0]) {
+         //  确保上下文已创建
+        ctx.value = Taro.createCanvasContext('canvas')
+        // 绘制网格
+        drawGrid()
+        emit('loaded')
+        return
+      }
+    })
+    
+    if (ctx.value) {
+      break
+    }
+  }
+}
+
+onMounted(() => {
+  getCanvasContext()
+})
+
+defineExpose({
+  setCurrentColor,
+  setEraser,
+  clearCanvas,
+  exportData,
+  loadData,
+  COLORS
+})
+</script>

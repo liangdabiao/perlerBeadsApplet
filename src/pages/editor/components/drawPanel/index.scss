@@ -1,0 +1,26 @@
+@use '../../../../styles/variables.scss' as *;
+
+.draw-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background-color: #FFFFFF;
+}
+
+.draw-canvas {
+  width: 100%;
+  height: 100%;
+  background-color: #FFFFFF;
+  border: 1px solid #E8E8E8;
+  border-radius: 8px;
+}
+
+.draw-image {
+  width: 100%;
+  height: 100%;
+  background-color: #FFFFFF;
+  border: 1px solid #E8E8E8;
+  border-radius: 8px;
+}
