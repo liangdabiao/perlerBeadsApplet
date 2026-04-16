@@ -56,7 +56,7 @@ import './index.scss'
 
 const drawPanelRef = ref<InstanceType<typeof DrawPanel> | null>(null)
 const currentColor = ref('#C4634E')
-const gridSize = ref(16)
+const gridSize = ref(32)
 const currentTool = ref('brush')
 const pixelData = ref<string[]>([])
 const canvasWidth = ref(0)

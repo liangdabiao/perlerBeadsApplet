@@ -7,10 +7,11 @@
 
 .color-picker-section {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
   padding: 16px;
   border-bottom: 2px solid rgba($border-color-dark, 0.2);
+  max-height: 200px;
 }
 
 .color-grid {
@@ -18,6 +19,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  max-height: 170px;
 }
 
 .color-row {
