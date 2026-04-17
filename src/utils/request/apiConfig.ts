@@ -2,7 +2,7 @@ import type { ApiService, ApiServiceConfig, RequestConfig } from './types'
 import { request, get, post, put, del, patch } from './index'
 
 export function createApiService<T = any>(config: ApiServiceConfig<T>): ApiService<T> {
-  const { url: baseUrl, method: defaultMethod = 'GET' } = config
+  const { url: baseUrl } = config
 
   const buildUrl = (id?: string | number): string => {
     if (id !== undefined) {
