@@ -1,6 +1,9 @@
 # 拼豆像素画小程序
 
-一款基于 Taro + Vue3 开发的拼豆像素画创作小程序，支持像素画编辑、作品管理、图片导入导出等功能。
+一款基于 Taro + Vue3 开发的拼豆像素画创作小程序，支持像素画编辑、作品管理、图片导入，图纸导出等功能。
+项目是基于和二开 开源程序：https://github.com/noir017/perlerBeadsApplet 
+感谢作者开源，而我是为我的拼豆项目 https://github.com/liangdabiao/perler-beads-ai
+改造成适合自己的小程序。
 
 ## 项目简介
 
