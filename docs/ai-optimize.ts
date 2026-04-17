@@ -3,9 +3,7 @@ interface Env {
   VOLC_SECRET_ACCESS_KEY: string;
 }
 
-// # 配置即梦4.0画图api
-// VOLC_ACCESS_KEY_ID=AKLTZjY0MmI5liZWM2MTU2MmM3NjI
-// VOLC_SECRET_ACCESS_KEY=TURRMkpqTmpSbFpESTFPV1JoT1dSa1pqWQ==
+// # 配置即梦4.0画图api 
 // 火山引擎API配置
 const VOLC_API_HOST = 'visual.volcengineapi.com';
 const VOLC_API_REGION = 'cn-north-1';

@@ -68,8 +68,11 @@ src/
 ├── stores/                   # Pinia 状态管理
 │   ├── editorTemp.ts         # 编辑器临时数据
 │   └── user.ts               # 用户信息
+├── types/                    # TypeScript 类型定义
+│   └── downloadTypes.ts      # 导出图纸相关类型定义
 └── utils/                    # 工具函数
-    ├── pixelArt.ts           # 核心：像素画渲染/导出/导入算法
+    ├── pixelArt.ts           # 核心：像素画渲染/导出/导入算法（含图纸生成）
+    ├── colorData.ts          # 色号系统：5大品牌色号映射表
     ├── storage.ts            # 本地存储 CRUD（作品数据持久化）
     ├── base64.ts             # ArrayBuffer ↔ Base64 转换
     ├── tools.ts              # 通用工具（sleep 等）
@@ -335,7 +338,7 @@ pixelData[] → writePixelToBuffer() → imageDataBuffer (Uint8ClampedArray)
       drawPanelRef.setPixelData(pixelData)
 ```
 
-**支持操作**：导出图片到相册、切换作品状态（已完成/进行中）。
+**支持操作**：下载图纸到相册（含网格、坐标、色号统计）、切换作品状态（已完成/进行中）。
 
 ---
 
@@ -501,6 +504,187 @@ const MAX_HISTORY = 50                     // 最大 50 步
 **重做** (`handleRedo`)：
 1. `historyIndex++`
 2. 逻辑与撤销相反
+
+---
+
+### 4.4 色号系统
+
+文件：`src/utils/colorData.ts`
+
+#### 4.4.1 支持的品牌色号系统
+
+| 色号系统 | 说明 | 色号示例 |
+|---------|------|---------|
+| MARD | 丹麦品牌（默认） | A01, B02, C03... |
+| COCO | 可可色系 | E02, F05, G08... |
+| 漫漫 | 漫漫色系 | E2, B3, C7... |
+| 盼盼 | 盼盼色系 | 65, 2, 28... |
+| 咪小窝 | 咪小窝色系 | 77, 2, 28... |
+
+#### 4.4.2 颜色映射数据结构
+
+```ts
+export type ColorSystem = 'MARD' | 'COCO' | '漫漫' | '盼盼' | '咪小窝';
+
+export interface ColorMapping {
+  MARD: string;
+  COCO: string;
+  漫漫: string;
+  盼盼: string;
+  咪小窝: string;
+}
+
+export const colorSystemMapping: Record<string, ColorMapping> = {
+  "#FAF4C8": { "MARD": "A01", "COCO": "E02", "漫漫": "E2", "盼盼": "65", "咪小窝": "77" },
+  // ... 共 217 种颜色的完整映射
+};
+```
+
+每个 HEX 颜色值映射到 5 个品牌的色号，方便用户根据自己持有的拼豆品牌选择对应的色号。
+
+#### 4.4.3 获取色号
+
+```ts
+function getColorKeyByHex(hex: string, colorSystem: ColorSystem = 'MARD'): string {
+  const normalizedHex = hex.toUpperCase()
+  if (colorSystemMapping[normalizedHex]) {
+    return colorSystemMapping[normalizedHex][colorSystem]
+  }
+  return hex
+}
+```
+
+#### 4.4.4 对比色计算
+
+图纸上显示色号时，需要根据背景色深浅使用黑色或白色文字确保可读性：
+
+```ts
+function getContrastColor(hex: string): string {
+  const rgb = hexToRgb(hex)
+  if (!rgb) return '#000000'
+  const luma = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255
+  return luma > 0.5 ? '#000000' : '#FFFFFF'
+}
+```
+
+使用 Luma 公式计算亮度，大于 0.5 使用黑色文字，否则使用白色文字。
+
+---
+
+### 4.5 导出图纸功能
+
+文件：`src/utils/pixelArt.ts`
+
+#### 4.5.1 功能概述
+
+导出图纸是针对拼豆玩家的核心功能，生成包含以下信息的高质量 PNG 图片：
+
+- **标题栏**：显示作品名称和网格尺寸
+- **品牌 Logo**：3×3 拼豆图案
+- **网格区域**：每个格子显示对应颜色的色号
+- **坐标轴**：行列编号标注
+- **网格线**：每隔 10 格显示加重线
+- **色号统计**：统计各颜色使用数量
+- **水印**：底部显示 `pindou.348349.xyz`
+
+#### 4.5.2 导出配置选项
+
+文件：`src/types/downloadTypes.ts`
+
+```ts
+export type GridDownloadOptions = {
+  showGrid: boolean;        // 是否显示网格线
+  gridInterval: number;     // 网格线间隔（每隔多少格）
+  showCoordinates: boolean;  // 是否显示坐标轴
+  showCellNumbers: boolean;  // 是否显示单元格色号
+  gridLineColor: string;     // 网格线颜色
+  includeStats: boolean;     // 是否包含色号统计
+  exportCsv: boolean;        // 是否导出 CSV（预留）
+};
+```
+
+#### 4.5.3 核心函数
+
+**`generatePatternImage(data, options, colorSystem, title)`**
+
+生成图纸图片，返回临时文件路径。
+
+主要流程：
+1. 根据网格尺寸计算画布大小（每个格子 30px）
+2. 计算标题栏高度（根据宽度自动缩放 1.0~2.0 倍）
+3. 计算坐标轴标签尺寸和边距
+4. 如果包含统计，计算统计区域高度
+5. 创建离屏 Canvas 并绘制
+
+**`exportPatternToGallery(data, options, colorSystem, title)`**
+
+导出图纸到相册的完整流程：
+```
+1. Taro.showLoading({ title: '生成图纸中...' })
+2. generatePatternImage() → 生成临时文件
+3. saveImageToPhotosAlbum() → 保存到相册
+4. Taro.hideLoading()
+5. Taro.showToast({ title: '图纸导出成功', icon: 'success' })
+```
+
+#### 4.5.4 画布尺寸计算
+
+```
+下载宽度 = N * downloadCellSize + axisLabelSize * 2 + extraLeftMargin + extraRightMargin
+下载高度 = titleBarHeight + M * downloadCellSize + axisLabelSize * 2 + statsHeight + extraTopMargin + extraBottomMargin
+
+其中：
+- downloadCellSize = 30（固定单元格大小）
+- axisLabelSize = showCoordinates ? max(30, downloadCellSize) : 0
+- extraLeftMargin/RightMargin = showCoordinates ? max(20, statsFontSize * 2) : 0
+- extraTopMargin/BottomMargin = showCoordinates ? max(15, statsFontSize) : 0
+- titleBarHeight = 80 * titleBarScale（titleBarScale 根据宽度计算 1.0~2.0）
+```
+
+#### 4.5.5 标题栏设计
+
+标题栏高度 80px，包含：
+- 左侧品牌色块（宽度为 titleBarHeight * 0.8）
+- 渐变色：蓝色 `#6366F1` → 紫色 `#8B5CF6`
+- 中间 Logo：3×3 拼豆图案（使用 `drawRoundedRect` 绘制圆角方块）
+- 右侧标题文字：主标题 + 副标题（网格尺寸）
+
+#### 4.5.6 圆角矩形兼容性处理
+
+微信小程序 Canvas 不支持 `roundRect` API，使用自定义函数：
+
+```ts
+function drawRoundedRect(ctx, x, y, width, height, radius): void {
+  ctx.beginPath()
+  ctx.moveTo(x + radius, y)
+  ctx.lineTo(x + width - radius, y)
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius)
+  ctx.lineTo(x + width, y + height - radius)
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
+  ctx.lineTo(x + radius, y + height)
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius)
+  ctx.lineTo(x, y + radius)
+  ctx.quadraticCurveTo(x, y, x + radius, y)
+  ctx.closePath()
+  ctx.fill()
+}
+```
+
+#### 4.5.7 离屏 Canvas 创建
+
+```ts
+async function createOffscreenCanvas(width, height): Promise<any> {
+  const canvas = Taro.createOffscreenCanvas({
+    type: '2d',
+    width: width,
+    height: height
+  })
+  const ctx = canvas.getContext('2d')
+  return { canvas, ctx }
+}
+```
+
+使用 `Taro.createOffscreenCanvas` 直接创建离屏画布，避免使用 `createSelectorQuery` 查找元素。
 
 ---
 
