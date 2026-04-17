@@ -48,7 +48,7 @@ import MenuBar from './components/menu/index.vue'
 import DrawPanel from './components/drawPanel/index.vue'
 import ToolArea from './components/toolArea/index.vue'
 import MIcon from '@/components/MIcon/index.vue'
-import { exportPixelArtToGallery, convertPixelArtToPngBuffer ,convertPixelArtToPngPath,arrayBufferToTempFilePath, pngToPixelArtData, imageToPixelArtData} from '@/utils/pixelArt'
+import { exportPixelArtToGallery, convertPixelArtToPngBuffer ,convertPixelArtToPngPath,arrayBufferToTempFilePath, pngToPixelArtData, imageToPixelArtData, exportPatternToGallery} from '@/utils/pixelArt'
 import { useEditorTempStore,EditorTempData } from '@/stores/editorTemp'
 import { base64ToArrayBuffer } from '@/utils/base64'
 import './index.scss'
@@ -155,17 +155,23 @@ const handleExport = async () => {
   try {
     const data = {
       gridSize: gridSize.value,
-      pixelData: pixelData.value,
-      createdAt: new Date().toISOString()
+      pixelData: pixelData.value
     }
     
-    Taro.showLoading({ title: '导出中...' })
-    await exportPixelArtToGallery(data,true)
+    Taro.showLoading({ title: '下载图纸中...' })
+    await exportPatternToGallery(data, {
+      showGrid: true,
+      gridInterval: 10,
+      showCoordinates: true,
+      showCellNumbers: true,
+      gridLineColor: '#555555',
+      includeStats: true,
+      exportCsv: false
+    }, 'MARD', '拼豆图纸')
     Taro.hideLoading()
-    Taro.showToast({ title: '导出成功', icon: 'success' })
   } catch (error) {
     Taro.hideLoading()
-    Taro.showToast({ title: '导出失败', icon: 'error' })
+    Taro.showToast({ title: '下载失败', icon: 'error' })
   }
 }
 

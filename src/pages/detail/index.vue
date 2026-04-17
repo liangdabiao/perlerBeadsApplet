@@ -35,7 +35,7 @@
       
       <view class="action-buttons">
         <view class="action-btn" @tap="handleExport">
-          <text class="btn-text">导出图片</text>
+          <text class="btn-text">下载图纸</text>
         </view>
         <view class="action-btn" @tap="handleToggleStatus">
           <text class="btn-text">{{ item.status === 'finished' ? '标注为进行中' : '标注为已完成' }}</text>
@@ -51,7 +51,7 @@
 import { ref, onMounted, nextTick } from 'vue'
 import Taro from '@tarojs/taro'
 import DrawPanel from '@/pages/editor/components/drawPanel/index.vue'
-import { arrayBufferToTempFilePath, pngToPixelArtData } from '@/utils/pixelArt'
+import { arrayBufferToTempFilePath, pngToPixelArtData, exportPatternToGallery } from '@/utils/pixelArt'
 import { PixelArtItemStorage, PixelArtStatus, updatePixelArt } from '@/utils/storage'
 import './index.scss'
 import { base64ToArrayBuffer } from '@/utils/base64'
@@ -75,6 +75,7 @@ const gridSize = ref(16)
 const canvasWidth = ref(0)
 const canvasHeight = ref(0)
 const drawPanelRef = ref<InstanceType<typeof DrawPanel>>()
+const currentPixelData = ref<string[]>([])
 
 const formatDate = (dateStr: string): string => {
   const date = new Date(dateStr)
@@ -93,6 +94,7 @@ const loadPixelArt = async () => {
     const tempFilePath = await arrayBufferToTempFilePath(base64ToArrayBuffer(item.value.pngData))
     const pixelData = await pngToPixelArtData(tempFilePath, item.value.gridSize)
     
+    currentPixelData.value = pixelData.pixelData
     gridSize.value = item.value.gridSize
     
     const systemInfo = Taro.getSystemInfoSync()
@@ -122,53 +124,25 @@ const loadPixelArt = async () => {
 
 const handleExport = async () => {
   try {
-    Taro.showLoading({ title: '导出中...' })
+    const data = {
+      gridSize: gridSize.value,
+      pixelData: currentPixelData.value
+    }
     
-    // const tempFilePath = await arrayBufferToTempFilePath(base64ToArrayBuffer(item.value.pngData))
-    const tempFilePath = item.value.pngTempPath
-    await new Promise<void>((resolve, reject) => {
-      Taro.saveImageToPhotosAlbum({
-        filePath: tempFilePath,
-        success: () => {
-          resolve()
-        },
-        fail: (err) => {
-          if (err.errMsg.includes('auth deny')) {
-            Taro.showModal({
-              title: '提示',
-              content: '需要您授权保存相册权限',
-              success: (modalRes) => {
-                if (modalRes.confirm) {
-                  Taro.openSetting({
-                    success: (settingRes) => {
-                      if (settingRes.authSetting['scope.writePhotosAlbum']) {
-                        Taro.saveImageToPhotosAlbum({
-                          filePath: tempFilePath,
-                          success: () => resolve(),
-                          fail: reject
-                        })
-                      } else {
-                        reject(new Error('用户拒绝授权'))
-                      }
-                    }
-                  })
-                } else {
-                  reject(new Error('用户拒绝授权'))
-                }
-              }
-            })
-          } else {
-            reject(err)
-          }
-        }
-      })
-    })
-    
+    Taro.showLoading({ title: '下载图纸中...' })
+    await exportPatternToGallery(data, {
+      showGrid: true,
+      gridInterval: 10,
+      showCoordinates: true,
+      showCellNumbers: true,
+      gridLineColor: '#555555',
+      includeStats: true,
+      exportCsv: false
+    }, 'MARD', item.value.title)
     Taro.hideLoading()
-    Taro.showToast({ title: '导出成功', icon: 'success' })
   } catch (error) {
     Taro.hideLoading()
-    Taro.showToast({ title: '导出失败', icon: 'error' })
+    Taro.showToast({ title: '下载失败', icon: 'error' })
   }
 }
 
