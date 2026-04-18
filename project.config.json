@@ -2,7 +2,7 @@
   "miniprogramRoot": "dist/",
   "projectname": "perlerBeadsApplet",
   "description": "拼豆小程序",
-  "appid": "wxfa924794938f4cb9",
+  "appid": "wxfa924794938f4",
   "setting": {
     "urlCheck": true,
     "es6": false,
